@@ -13,7 +13,7 @@ class State(IntEnum):
 class Decoder(srd.Decoder):
     api_version = 3
     id = 'ibmpc_kbd'
-    name = 'keyboard'
+    name = 'IBM keycode'
     longname = 'IBM PC AT/XT keyboard'
     desc = 'IBM PC AT/XT keyboard/mouse interface.'
     license = 'gplv2+'
