@@ -8,7 +8,7 @@ class State(IntEnum):
     INIT = 0
     F0 = 1
     E0 = 2
-    F0_E0 = 3
+    E0_F0 = 3
 
 class Decoder(srd.Decoder):
     api_version = 3
@@ -75,19 +75,27 @@ class Decoder(srd.Decoder):
                             ['↓: %s' % self.to_code(byte), '↓', '↓']])
 
         elif self.state == State.F0:
-            if byte == 0xE0:
-                self.state = State.F0_E0
-            else:
-                self.state = State.INIT
-                self.put(ss, es, self.out_ann, [Ann.DATA,
+            self.state = State.INIT
+            self.put(ss, es, self.out_ann, [Ann.DATA,
                         ['↑: %s' % self.to_code(byte), '↑', '↑']])
 
         elif self.state == State.E0:
-            self.state = State.INIT
-            self.put(ss, es, self.out_ann, [Ann.DATA,
-                    ['↓: %s' % self.to_e0_code(byte), '↓', '↓']])
+            if self.options['cs'] == 'cs1':
+                if byte & 0x80:
+                    self.put(ss, es, self.out_ann, [Ann.DATA,
+                            ['↑: %s' % self.to_e0_code(byte & 0x7F), '↑', '↑']])
+                else:
+                    self.put(ss, es, self.out_ann, [Ann.DATA,
+                            ['↓: %s' % self.to_e0_code(byte & 0x7F), '↓', '↓']])
+            else:
+                if byte == 0xF0:
+                    self.state = State.E0_F0
+                else:
+                    self.state = State.INIT
+                    self.put(ss, es, self.out_ann, [Ann.DATA,
+                            ['↓: %s' % self.to_e0_code(byte), '↓', '↓']])
 
-        elif self.state == State.F0_E0:
+        elif self.state == State.E0_F0:
             self.state = State.INIT
             self.put(ss, es, self.out_ann, [Ann.DATA,
                     ['↑: %s' % self.to_e0_code(byte), '↑', '↑']])
@@ -106,7 +114,7 @@ class Decoder(srd.Decoder):
         if self.options['cs'] == 'cs1':
             return self.cs1_e0_to_str(byte)
         elif self.options['cs'] == 'cs2':
-            return self.cs1_e0_to_str(byte)
+            return self.cs2_e0_to_str(byte)
         elif self.options['cs'] == 'cs3':
             return '???'
 
@@ -431,6 +439,7 @@ class Decoder(srd.Decoder):
                 0x7D:   'Keypad 9 PageUp',
                 0x7E:   'Scroll Lock',
                 0x83:   'F7',
+                0x84:   'Print Screen',
                 0xF1:   '한한(Hanja)',
                 0xF2:   '한옝(Hangul/English)',
                 0xFC:   'POST Fail',
